@@ -49,7 +49,8 @@ function DownloadButton(props: Props): ReactElement {
     const link = document.createElement("a")
     const uri = endpoints.buildMediaURL(element.url)
     link.setAttribute("href", uri)
-    link.setAttribute("target", "_blank")
+    link.setAttribute("target", "_self")
+    link.setAttribute("download", "")
     link.click()
   }
 
@@ -75,7 +76,8 @@ function DownloadButton(props: Props): ReactElement {
             source={element.label}
             allowHTML={false}
             isLabel
-            isButton
+            largerLabel
+            disableLinks
           />
         </BaseButton>
       </BaseButtonTooltip>

@@ -42,6 +42,16 @@ import {
 } from "@streamlit/lib"
 import AppView, { AppViewProps } from "./AppView"
 
+// Mock needed for Block.tsx
+class ResizeObserver {
+  observe(): void {}
+
+  unobserve(): void {}
+
+  disconnect(): void {}
+}
+window.ResizeObserver = ResizeObserver
+
 function getContextOutput(context: Partial<AppContextProps>): AppContextProps {
   return {
     wideMode: false,
@@ -67,7 +77,7 @@ function getProps(props: Partial<AppViewProps> = {}): AppViewProps {
 
   return {
     endpoints: endpoints,
-    elements: AppRoot.empty(),
+    elements: AppRoot.empty(true),
     sendMessageToHost: jest.fn(),
     sessionInfo: sessionInfo,
     scriptRunId: "script run 123",
@@ -229,45 +239,6 @@ describe("AppView element", () => {
       screen.getByTestId("block-container")
     )
     expect(style.maxWidth).toEqual("initial")
-  })
-
-  it("opens link to streamlit.io in new tab", () => {
-    render(<AppView {...getProps()} />)
-    const link = screen.getByRole("link", { name: "Streamlit" })
-    expect(link).toHaveAttribute("href", "//streamlit.io")
-    expect(link).toHaveAttribute("target", "_blank")
-  })
-
-  it("renders the Spacer and Footer when not embedded", () => {
-    const realUseContext = React.useContext
-    jest.spyOn(React, "useContext").mockImplementation(input => {
-      if (input === AppContext) {
-        return getContextOutput({ wideMode: false, embedded: false })
-      }
-
-      return realUseContext(input)
-    })
-
-    render(<AppView {...getProps()} />)
-
-    expect(screen.getByTestId("AppViewBlockSpacer")).toBeInTheDocument()
-    expect(screen.getByRole("contentinfo")).toBeInTheDocument()
-  })
-
-  it("does not render the Spacer and Footer when embedded", () => {
-    const realUseContext = React.useContext
-    jest.spyOn(React, "useContext").mockImplementation(input => {
-      if (input === AppContext) {
-        return getContextOutput({ wideMode: false, embedded: true })
-      }
-
-      return realUseContext(input)
-    })
-
-    render(<AppView {...getProps()} />)
-
-    expect(screen.queryByTestId("AppViewBlockSpacer")).not.toBeInTheDocument()
-    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument()
   })
 
   describe("when window.location.hash changes", () => {

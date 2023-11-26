@@ -69,9 +69,17 @@ export const StyledElementContainer = styled.div<StyledElementContainerProps>(
       overflow: "visible",
     },
 
+    ":has(> .cacheSpinner)": {
+      height: 0,
+      overflow: "visible",
+      visibility: "visible",
+      marginBottom: "-1rem",
+      zIndex: 1000,
+    },
+
     // We do not want the chat input to be faded out.
     // TODO: Reconsider this when we implement fixed-sized chat containers
-    ...(isStale && elementType !== "chatInput"
+    ...(isStale && elementType !== "chatInput" && elementType !== "skeleton"
       ? {
           opacity: 0.33,
           transition: "opacity 1s ease-in 0.5s",
@@ -119,12 +127,6 @@ export const StyledColumn = styled.div<StyledColumnProps>(
   }
 )
 
-export const styledVerticalBlockWrapperStyles: any = {
-  display: "flex",
-  flexDirection: "column",
-  flex: 1,
-}
-
 export interface StyledVerticalBlockProps {
   ref?: React.RefObject<any>
   width?: number
@@ -141,3 +143,24 @@ export const StyledVerticalBlock = styled.div<StyledVerticalBlockProps>(
     gap: theme.spacing.lg,
   })
 )
+
+export const StyledVerticalBlockWrapper = styled.div<StyledVerticalBlockProps>(
+  {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1,
+  }
+)
+
+export interface StyledVerticalBlockBorderWrapperProps {
+  border: boolean
+}
+
+export const StyledVerticalBlockBorderWrapper =
+  styled.div<StyledVerticalBlockBorderWrapperProps>(({ theme, border }) => ({
+    ...(border && {
+      border: `1px solid ${theme.colors.fadedText10}`,
+      borderRadius: theme.radii.lg,
+      padding: "calc(1em - 1px)", // 1px to account for border.
+    }),
+  }))

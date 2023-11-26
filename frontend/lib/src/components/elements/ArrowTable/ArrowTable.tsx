@@ -17,7 +17,7 @@
 import { range } from "lodash"
 import React, { ReactElement } from "react"
 
-import withFullScreenWrapper from "@streamlit/lib/src/hocs/withFullScreenWrapper"
+import { withFullScreenWrapper } from "@streamlit/lib/src/components/shared/FullScreenWrapper"
 import { Quiver } from "@streamlit/lib/src/dataframes/Quiver"
 import {
   StyledEmptyTableCell,
@@ -42,7 +42,7 @@ export function ArrowTable(props: TableProps): ReactElement {
   return (
     <StyledTableContainer data-testid="stTable">
       {cssStyles && <style>{cssStyles}</style>}
-      <StyledTable id={cssId}>
+      <StyledTable id={cssId} data-testid="stTableStyledTable">
         {caption && (
           <caption>
             <small>{caption}</small>
@@ -58,7 +58,10 @@ export function ArrowTable(props: TableProps): ReactElement {
         <tbody>
           {dataRows.length === 0 ? (
             <tr>
-              <StyledEmptyTableCell colSpan={columns || 1}>
+              <StyledEmptyTableCell
+                data-testid="stTableStyledEmptyTableCell"
+                colSpan={columns || 1}
+              >
                 empty
               </StyledEmptyTableCell>
             </tr>

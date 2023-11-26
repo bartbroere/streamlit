@@ -85,11 +85,15 @@ class CheckboxMixin:
 
             * Colored text, using the syntax ``:color[text to be colored]``,
               where ``color`` needs to be replaced with any of the following
-              supported colors: blue, green, orange, red, violet.
+              supported colors: blue, green, orange, red, violet, gray/grey, rainbow.
 
             Unsupported elements are unwrapped so only their children (text contents) render.
             Display unsupported elements as literal characters by
             backslash-escaping them. E.g. ``1\. Not an ordered list``.
+
+            For accessibility reasons, you should never set an empty label (label="")
+            but hide it with label_visibility if needed. In the future, we may disallow
+            empty labels by raising an exception.
         value : bool
             Preselect the checkbox when it first renders. This will be
             cast to bool internally.
@@ -108,12 +112,12 @@ class CheckboxMixin:
             An optional dict of kwargs to pass to the callback.
         disabled : bool
             An optional boolean, which disables the checkbox if set to True.
-            The default is False. This argument can only be supplied by keyword.
+            The default is False.
         label_visibility : "visible", "hidden", or "collapsed"
             The visibility of the label. If "hidden", the label doesn't show but there
             is still empty space for it (equivalent to label="").
             If "collapsed", both the label and the space are removed. Default is
-            "visible". This argument can only be supplied by keyword.
+            "visible".
 
         Returns
         -------
@@ -184,11 +188,15 @@ class CheckboxMixin:
 
             * Colored text, using the syntax ``:color[text to be colored]``,
               where ``color`` needs to be replaced with any of the following
-              supported colors: blue, green, orange, red, violet.
+              supported colors: blue, green, orange, red, violet, gray/grey, rainbow.
 
             Unsupported elements are unwrapped so only their children (text contents) render.
             Display unsupported elements as literal characters by
             backslash-escaping them. E.g. ``1\. Not an ordered list``.
+
+            For accessibility reasons, you should never set an empty label (label="")
+            but hide it with label_visibility if needed. In the future, we may disallow
+            empty labels by raising an exception.
         value : bool
             Preselect the toggle when it first renders. This will be
             cast to bool internally.
@@ -207,12 +215,12 @@ class CheckboxMixin:
             An optional dict of kwargs to pass to the callback.
         disabled : bool
             An optional boolean, which disables the toggle if set to True.
-            The default is False. This argument can only be supplied by keyword.
+            The default is False.
         label_visibility : "visible", "hidden", or "collapsed"
             The visibility of the label. If "hidden", the label doesn't show but there
             is still empty space for it (equivalent to label="").
             If "collapsed", both the label and the space are removed. Default is
-            "visible". This argument can only be supplied by keyword.
+            "visible".
 
         Returns
         -------
@@ -226,7 +234,7 @@ class CheckboxMixin:
         >>> on = st.toggle('Activate feature')
         >>>
         >>> if on:
-        ...     st.write('Feature activated!")
+        ...     st.write('Feature activated!')
 
         .. output::
            https://doc-toggle.streamlit.app/
@@ -272,13 +280,14 @@ class CheckboxMixin:
         maybe_raise_label_warnings(label, label_visibility)
 
         id = compute_widget_id(
-            "checkbox",
+            "toggle" if type == CheckboxProto.StyleType.TOGGLE else "checkbox",
             user_key=key,
             label=label,
             value=bool(value),
             key=key,
             help=help,
             form_id=current_form_id(self.dg),
+            page=ctx.page_script_hash if ctx else None,
         )
 
         checkbox_proto = CheckboxProto()

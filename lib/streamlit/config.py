@@ -282,6 +282,9 @@ _create_option(
         """,
     default_val=False,
     type_=bool,
+    deprecated=True,
+    deprecation_text="global.disableWatchdogWarning has been deprecated has been deprecated and will be removed in a future version.",
+    expiration_date="2024-01-20",
 )
 
 
@@ -383,8 +386,10 @@ _create_option(
         - 'arrow': Serialize DataFrames using Apache Arrow. Much faster and versatile.""",
     default_val="arrow",
     type_=str,
+    deprecated=True,
+    deprecation_text="Legacy serialization has been removed. All dataframes will be serialized using Apache Arrow.",
+    expiration_date="2023-11-01",
 )
-
 
 # Config Section: Logger #
 _create_section("logger", "Settings to customize Streamlit log messages.")
@@ -448,6 +453,9 @@ _create_option(
     default_val=True,
     type_=bool,
     scriptable=True,
+    deprecated=True,
+    deprecation_text="client.caching has been deprecated and is not required anymore for our new caching commands.",
+    expiration_date="2024-01-20",
 )
 
 _create_option(
@@ -457,6 +465,9 @@ _create_option(
     default_val=True,
     type_=bool,
     scriptable=True,
+    deprecated=True,
+    deprecation_text="client.displayEnabled has been deprecated and will be removed in a future version.",
+    expiration_date="2024-01-20",
 )
 
 _create_option(
@@ -521,6 +532,9 @@ _create_option(
         """,
     default_val=False,
     type_=bool,
+    deprecated=True,
+    deprecation_text="runner.installTracer has been deprecated and will be removed in a future version.",
+    expiration_date="2024-01-20",
 )
 
 _create_option(
@@ -530,6 +544,9 @@ _create_option(
         prevent Python crashing.
         """,
     default_val=True,
+    deprecated=True,
+    deprecation_text="runner.fixMatplotlib has been deprecated and will be removed in a future version.",
+    expiration_date="2024-01-20",
     type_=bool,
 )
 
@@ -543,6 +560,7 @@ _create_option(
         """,
     default_val=True,
     type_=bool,
+    visibility="hidden",
 )
 
 _create_option(
@@ -568,6 +586,23 @@ _create_option(
     """,
     default_val=False,
     type_=bool,
+)
+
+_create_option(
+    "runner.enumCoercion",
+    description="""
+        Adjust how certain 'options' widgets like radio, selectbox, and
+        multiselect coerce Enum members when the Enum class gets
+        re-defined during a script re-run.
+
+        Allowed values:
+        * "off": Disables Enum coercion.
+        * "nameOnly": Enum classes can be coerced if their member names match.
+        * "nameAndValue": Enum classes can be coerced if their member names AND
+          member values match.
+    """,
+    default_val="nameOnly",
+    type_=str,
 )
 
 # Config Section: Server #
@@ -759,6 +794,23 @@ _create_option(
     type_=bool,
 )
 
+
+_create_option(
+    "server.maxStaticFileSize",
+    description="The maximum file size in MB that is allowed to be served from the static directory.",
+    default_val=200,
+    type_=int,
+)
+
+
+_create_option(
+    "server.allowedStaticFileExtensions",
+    description="File extensions that are allowed to be served with the correct MIME type. "
+    "Everything else will be served with MIME type text/plain.",
+    default_val=[".jpg", ".jpeg", ".png", ".gif", ".webp"],
+    type_=list,
+)
+
 # Config Section: Browser #
 
 _create_section("browser", "Configuration of non-UI browser options.")
@@ -837,10 +889,6 @@ _create_option(
 
 # Config Section: UI #
 
-# NOTE: We currently hide the ui config section in the `streamlit config show`
-# output as all of its options are hidden. If a non-hidden option is eventually
-# added, the section should be unhidden by removing it from the `SKIP_SECTIONS`
-# set in config_util.show_config.
 _create_section("ui", "Configuration of UI elements displayed in the browser.")
 
 _create_option(
@@ -879,6 +927,36 @@ _create_option(
 )
 
 
+# Config Section: Magic #
+
+_create_section("magic", "Settings for how Streamlit pre-processes your script")
+
+_create_option(
+    "magic.displayRootDocString",
+    description="""
+        Streamlit's "magic" parser typically skips strings that appear to be
+        docstrings. When this flag is set to True, Streamlit will instead display
+        the root-level docstring in the app, just like any other magic string.
+        This is useful for things like notebooks.
+        """,
+    visibility="hidden",
+    default_val=False,
+    type_=bool,
+)
+
+_create_option(
+    "magic.displayLastExprIfNoSemicolon",
+    description="""
+        Make Streamlit's "magic" parser always display the last expression in the
+        root file if it has no semicolon at the end. This matches the behavior of
+        Jupyter notebooks, for example.
+        """,
+    visibility="hidden",
+    default_val=False,
+    type_=bool,
+)
+
+
 # Config Section: deprecations
 
 _create_section("deprecation", "Configuration to show or hide deprecation warnings.")
@@ -889,6 +967,8 @@ _create_option(
     default_val=True,
     scriptable=True,
     type_=bool,
+    deprecated=True,
+    deprecation_text="deprecation.showfileUploaderEncoding has been deprecated and will be removed in a future version.",
     expiration_date="2021-01-06",
 )
 

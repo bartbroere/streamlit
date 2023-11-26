@@ -80,6 +80,7 @@ class AppSession:
         message_enqueued_callback: Optional[Callable[[], None]],
         local_sources_watcher: LocalSourcesWatcher,
         user_info: Dict[str, Optional[str]],
+        session_id_override: Optional[str] = None,
     ) -> None:
         """Initialize the AppSession.
 
@@ -113,9 +114,13 @@ class AppSession:
             Information about the current user is optionally provided when a
             websocket connection is initialized via the "X-Streamlit-User" header.
 
+        session_id_override
+            The ID to assign to this session. Setting this can be useful when the
+            service that a Streamlit Runtime is running in wants to tie the lifecycle of
+            a Streamlit session to some other session-like object that it manages.
         """
         # Each AppSession has a unique string ID.
-        self.id = str(uuid.uuid4())
+        self.id = session_id_override or str(uuid.uuid4())
 
         self._event_loop = asyncio.get_running_loop()
         self._script_data = script_data
@@ -386,7 +391,6 @@ class AppSession:
         self._scriptrunner = ScriptRunner(
             session_id=self.id,
             main_script_path=self._script_data.main_script_path,
-            client_state=self._client_state,
             session_state=self._session_state,
             uploaded_file_mgr=self._uploaded_file_mgr,
             script_cache=self._script_cache,
@@ -792,7 +796,6 @@ def _get_toolbar_mode() -> "Config.ToolbarMode.ValueType":
 def _populate_config_msg(msg: Config) -> None:
     msg.gather_usage_stats = config.get_option("browser.gatherUsageStats")
     msg.max_cached_message_age = config.get_option("global.maxCachedMessageAge")
-    msg.mapbox_token = config.get_option("mapbox.token")
     msg.allow_run_on_save = config.get_option("server.allowRunOnSave")
     msg.hide_top_bar = config.get_option("ui.hideTopBar")
     msg.hide_sidebar_nav = config.get_option("ui.hideSidebarNav")

@@ -16,7 +16,7 @@
 
 import React from "react"
 
-import { PageConfig } from "@streamlit/lib"
+import { PageConfig, IGitInfo, AppConfig } from "@streamlit/lib"
 
 export interface Props {
   /**
@@ -90,6 +90,16 @@ export interface Props {
    * @see EventContainer
    */
   toastAdjustment: boolean
+
+  /**
+   * The latest state of the git information related to the app.
+   */
+  gitInfo: IGitInfo | null
+
+  /** The app-specific configuration from the apps host which is requested via the
+   * _stcore/host-config endpoint.
+   */
+  appConfig: AppConfig
 }
 
 export const AppContext = React.createContext<Props>({
@@ -104,4 +114,6 @@ export const AppContext = React.createContext<Props>({
   pageLinkBaseUrl: "",
   sidebarChevronDownshift: 0,
   toastAdjustment: false,
+  gitInfo: null,
+  appConfig: {},
 })

@@ -53,6 +53,7 @@ import {
 } from "./styled-components"
 
 import "katex/dist/katex.min.css"
+import xxhash from "xxhashjs"
 import StreamlitSyntaxHighlighter from "@streamlit/lib/src/components/elements/CodeBlock/StreamlitSyntaxHighlighter"
 
 export enum Tags {
@@ -86,12 +87,12 @@ export interface Props {
   largerLabel?: boolean
 
   /**
-   * Does not allow links & has larger font sizing
+   * Does not allow links
    */
-  isButton?: boolean
+  disableLinks?: boolean
 
   /**
-   * Toast has smaller font sizing
+   * Toast has smaller font sizing & special CSS
    */
   isToast?: boolean
 }
@@ -101,12 +102,21 @@ export interface Props {
  * Splits the string on non-alphanumeric characters, and joins with a dash.
  */
 export function createAnchorFromText(text: string | null): string {
-  const newAnchor = text
-    ?.toLowerCase()
-    .split(/[^A-Za-z0-9]/)
-    .filter(Boolean)
-    .join("-")
-  return newAnchor || ""
+  let newAnchor = ""
+  // Check if the text is valid ASCII characters - necessary for fully functional anchors (issue #5291)
+  const isASCII = text && /^[\x00-\x7F]*$/.test(text)
+
+  if (isASCII) {
+    newAnchor = text
+      ?.toLowerCase()
+      .split(/[^\p{L}\p{N}]+/gu) // split on non-alphanumeric characters
+      .filter(Boolean) // filter out falsy values using Boolean constructor
+      .join("-")
+  } else if (text) {
+    // if the text is not valid ASCII, use a hash of the text
+    newAnchor = xxhash.h32(text, 0xabcd).toString(16)
+  }
+  return newAnchor
 }
 
 // Note: React markdown limits hrefs to specific protocols ('http', 'https',
@@ -227,9 +237,9 @@ export interface RenderedMarkdownProps {
   isLabel?: boolean
 
   /**
-   * Does not allow links & has larger font sizing
+   * Does not allow links
    */
-  isButton?: boolean
+  disableLinks?: boolean
 }
 
 export type CustomCodeTagProps = JSX.IntrinsicElements["code"] &
@@ -264,7 +274,7 @@ export function RenderedMarkdown({
   source,
   overrideComponents,
   isLabel,
-  isButton,
+  disableLinks,
 }: RenderedMarkdownProps): ReactElement {
   const renderers: Components = {
     pre: CodeBlock,
@@ -289,6 +299,7 @@ export function RenderedMarkdown({
       violet: `color: ${violet}`,
       orange: `color: ${orange}`,
       gray: `color: ${gray}`,
+      grey: `color: ${gray}`,
       // Gradient from red, orange, yellow, green, blue, violet, purple
       rainbow: `color: transparent; background-clip: text; -webkit-background-clip: text; background-image: linear-gradient(to right,
         ${red}, ${orange}, ${yellow}, ${green}, ${blue}, ${violet}, ${purple});`,
@@ -342,8 +353,8 @@ export function RenderedMarkdown({
     "input",
     "hr",
     "blockquote",
-    // Button labels additionally restrict links
-    ...(isButton ? ["a"] : []),
+    // additionally restrict links
+    ...(disableLinks ? ["a"] : []),
   ]
 
   return (
@@ -388,7 +399,7 @@ class StreamlitMarkdown extends PureComponent<Props> {
       isCaption,
       isLabel,
       largerLabel,
-      isButton,
+      disableLinks,
       isToast,
     } = this.props
     const isInSidebar = this.context
@@ -399,7 +410,6 @@ class StreamlitMarkdown extends PureComponent<Props> {
         isInSidebar={isInSidebar}
         isLabel={isLabel}
         largerLabel={largerLabel}
-        isButton={isButton}
         isToast={isToast}
         style={style}
         data-testid={isCaption ? "stCaptionContainer" : "stMarkdownContainer"}
@@ -408,7 +418,7 @@ class StreamlitMarkdown extends PureComponent<Props> {
           source={source}
           allowHTML={allowHTML}
           isLabel={isLabel}
-          isButton={isButton}
+          disableLinks={disableLinks}
         />
       </StyledStreamlitMarkdown>
     )

@@ -41,6 +41,7 @@ const mockCustomThemeConfig = {
   textColor: "#1A1D21",
   widgetBackgroundColor: "#FFFFFF",
   widgetBorderColor: "#D3DAE8",
+  skeletonBackgroundColor: "#CCDDEE",
   fontFaces: [
     {
       family: "Inter",
@@ -51,6 +52,16 @@ const mockCustomThemeConfig = {
 }
 
 jest.mock("@streamlit/app/src/connection/ConnectionManager")
+
+// Mock needed for Block.tsx
+class ResizeObserver {
+  observe(): void {}
+
+  unobserve(): void {}
+
+  disconnect(): void {}
+}
+window.ResizeObserver = ResizeObserver
 
 describe("ThemedApp", () => {
   beforeEach(() => {

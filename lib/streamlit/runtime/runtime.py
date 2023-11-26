@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 import time
 import traceback
 from dataclasses import dataclass, field
@@ -281,14 +280,9 @@ class Runtime:
         )
         self._async_objs = async_objs
 
-        if sys.version_info >= (3, 8, 0):
-            # Python 3.8+ supports a create_task `name` parameter, which can
-            # make debugging a bit easier.
-            self._loop_coroutine_task = asyncio.create_task(
-                self._loop_coroutine(), name="Runtime.loop_coroutine"
-            )
-        else:
-            self._loop_coroutine_task = asyncio.create_task(self._loop_coroutine())
+        self._loop_coroutine_task = asyncio.create_task(
+            self._loop_coroutine(), name="Runtime.loop_coroutine"
+        )
 
         await async_objs.started
 
@@ -327,6 +321,7 @@ class Runtime:
         client: SessionClient,
         user_info: Dict[str, Optional[str]],
         existing_session_id: Optional[str] = None,
+        session_id_override: Optional[str] = None,
     ) -> str:
         """Create a new session (or connect to an existing one) and return its unique ID.
 
@@ -342,6 +337,17 @@ class Runtime:
             {
                 "email": "example@example.com"
             }
+        existing_session_id
+            The ID of an existing session to reconnect to. If one is not provided, a new
+            session is created. Note that whether the Runtime's SessionManager supports
+            reconnecting to an existing session depends on the SessionManager that this
+            runtime is configured with.
+        session_id_override
+            The ID to assign to a new session being created with this method. Setting
+            this can be useful when the service that a Streamlit Runtime is running in
+            wants to tie the lifecycle of a Streamlit session to some other session-like
+            object that it manages. Only one of existing_session_id and
+            session_id_override should be set.
 
         Returns
         -------
@@ -352,6 +358,10 @@ class Runtime:
         -----
         Threading: UNSAFE. Must be called on the eventloop thread.
         """
+        assert not (
+            existing_session_id and session_id_override
+        ), "Only one of existing_session_id and session_id_override should be set!"
+
         if self._state in (RuntimeState.STOPPING, RuntimeState.STOPPED):
             raise RuntimeStoppedError(f"Can't connect_session (state={self._state})")
 
@@ -360,6 +370,7 @@ class Runtime:
             script_data=ScriptData(self._main_script_path, self._command_line or ""),
             user_info=user_info,
             existing_session_id=existing_session_id,
+            session_id_override=session_id_override,
         )
         self._set_state(RuntimeState.ONE_OR_MORE_SESSIONS_CONNECTED)
         self._get_async_objs().has_connection.set()
@@ -371,6 +382,7 @@ class Runtime:
         client: SessionClient,
         user_info: Dict[str, Optional[str]],
         existing_session_id: Optional[str] = None,
+        session_id_override: Optional[str] = None,
     ) -> str:
         """Create a new session (or connect to an existing one) and return its unique ID.
 
@@ -381,7 +393,10 @@ class Runtime:
         """
         LOGGER.warning("create_session is deprecated! Use connect_session instead.")
         return self.connect_session(
-            client=client, user_info=user_info, existing_session_id=existing_session_id
+            client=client,
+            user_info=user_info,
+            existing_session_id=existing_session_id,
+            session_id_override=session_id_override,
         )
 
     def close_session(self, session_id: str) -> None:

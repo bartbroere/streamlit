@@ -41,6 +41,7 @@ import "streamlit/proto/GraphVizChart.proto";
 import "streamlit/proto/IFrame.proto";
 import "streamlit/proto/Image.proto";
 import "streamlit/proto/Json.proto";
+import "streamlit/proto/LinkButton.proto";
 import "streamlit/proto/NumberInput.proto";
 import "streamlit/proto/Markdown.proto";
 import "streamlit/proto/Metric.proto";
@@ -52,6 +53,7 @@ import "streamlit/proto/Snow.proto";
 import "streamlit/proto/Spinner.proto";
 import "streamlit/proto/Radio.proto";
 import "streamlit/proto/Selectbox.proto";
+import "streamlit/proto/Skeleton.proto";
 import "streamlit/proto/Slider.proto";
 import "streamlit/proto/Text.proto";
 import "streamlit/proto/TextArea.proto";
@@ -81,7 +83,9 @@ message Element {
     Checkbox checkbox = 20;
     ColorPicker color_picker = 35;
     ComponentInstance component_instance = 37;
+    // DEPRECATED: This element is deprecated and unused:
     DataFrame data_frame = 3;
+    // DEPRECATED: This element is deprecated and unused:
     DataFrame table = 11;
     DateInput date_input = 27;
     DeckGlJsonChart deck_gl_json_chart = 34;
@@ -94,6 +98,7 @@ message Element {
     IFrame iframe = 38;
     ImageList imgs = 6;
     Json json = 31;
+    LinkButton link_button = 51;
     Markdown markdown = 29;
     Metric metric = 42;
     MultiSelect multiselect = 28;
@@ -102,6 +107,7 @@ message Element {
     Progress progress = 5;
     Radio radio = 23;
     Selectbox selectbox = 25;
+    Skeleton skeleton = 52;  // Internal-only.
     Slider slider = 21;
     Snow snow = 46;
     Spinner spinner = 44;
@@ -110,11 +116,12 @@ message Element {
     TextInput text_input = 24;
     TimeInput time_input = 26;
     Toast toast = 50;
+    // DEPRECATED: This element is deprecated and unused:
     VegaLiteChart vega_lite_chart = 10;
     Video video = 14;
     Heading heading = 47;
     Code code = 48;
-    // Next ID: 51
+    // Next ID: 53
   }
 
   reserved 9;

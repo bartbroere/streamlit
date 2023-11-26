@@ -22,7 +22,6 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 
-from streamlit import source_util
 from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
 from streamlit.runtime import (
     Runtime,
@@ -30,9 +29,6 @@ from streamlit.runtime import (
     RuntimeState,
     SessionClient,
     SessionClientDisconnectedError,
-)
-from streamlit.runtime.caching.storage.dummy_cache_storage import (
-    MemoryCacheStorageManager,
 )
 from streamlit.runtime.caching.storage.local_disk_cache_storage import (
     LocalDiskCacheStorageManager,
@@ -48,10 +44,7 @@ from tests.streamlit.message_mocks import (
     create_dataframe_msg,
     create_script_finished_message,
 )
-from tests.streamlit.runtime.runtime_test_case import (
-    MockSessionManager,
-    RuntimeTestCase,
-)
+from tests.streamlit.runtime.runtime_test_case import RuntimeTestCase
 from tests.testutil import patch_config_options
 
 
@@ -144,6 +137,18 @@ class RuntimeTest(RuntimeTestCase):
         self.runtime.disconnect_session(session_id)
         self.assertEqual(RuntimeState.NO_SESSIONS_CONNECTED, self.runtime.state)
 
+    async def test_connect_session_error_if_both_session_id_args(self):
+        """Test that setting both existing_session_id and session_id_override is an error."""
+        await self.runtime.start()
+
+        with pytest.raises(AssertionError):
+            self.runtime.connect_session(
+                client=MockSessionClient(),
+                user_info=MagicMock(),
+                existing_session_id="existing_session_id",
+                session_id_override="session_id_override",
+            )
+
     async def test_connect_session_existing_session_id_plumbing(self):
         """The existing_session_id parameter is plumbed to _session_mgr.connect_session."""
         await self.runtime.start()
@@ -166,6 +171,32 @@ class RuntimeTest(RuntimeTestCase):
                 script_data=ANY,
                 user_info=user_info,
                 existing_session_id=existing_session_id,
+                session_id_override=None,
+            )
+
+    async def test_connect_session_session_id_override_plumbing(self):
+        """The session_id_override parameter is plumbed to _session_mgr.connect_session."""
+        await self.runtime.start()
+
+        with patch.object(
+            self.runtime._session_mgr, "connect_session", new=MagicMock()
+        ) as patched_connect_session:
+            client = MockSessionClient()
+            user_info = MagicMock()
+            session_id_override = "some_session_id"
+
+            session_id = self.runtime.connect_session(
+                client=client,
+                user_info=user_info,
+                session_id_override=session_id_override,
+            )
+
+            patched_connect_session.assert_called_with(
+                client=client,
+                script_data=ANY,
+                user_info=user_info,
+                existing_session_id=None,
+                session_id_override=session_id_override,
             )
 
     @patch("streamlit.runtime.runtime.LOGGER")
@@ -185,6 +216,7 @@ class RuntimeTest(RuntimeTestCase):
                 client=client,
                 user_info=user_info,
                 existing_session_id=None,
+                session_id_override=None,
             )
             patched_logger.warning.assert_called_with(
                 "create_session is deprecated! Use connect_session instead."

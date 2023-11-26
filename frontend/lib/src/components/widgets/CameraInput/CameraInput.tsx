@@ -251,32 +251,7 @@ class CameraInput extends React.PureComponent<Props, State> {
     return "ready"
   }
 
-  public componentDidUpdate = (prevProps: Props): void => {
-    const { element, widgetMgr } = this.props
-
-    // TODO(vdonato): Rework this now that there's a short window where the app
-    // may reconnect to the server without losing its uploaded files. Just
-    // removing the if statement below (to avoid resetting widget state on a
-    // disconnect) seemed to work, but I'm not entirely sure if it's a complete
-    // fix.
-    //
-    // Widgets are disabled if the app is not connected anymore.
-    // If the app disconnects from the server, a new session is created and users
-    // will lose access to the files they uploaded in their previous session.
-    // If we are reconnecting, reset the camera input so that the widget is
-    // in sync with the new session.
-    if (prevProps.disabled !== this.props.disabled && this.props.disabled) {
-      this.reset()
-      widgetMgr.setFileUploaderStateValue(
-        element,
-        new FileUploaderStateProto(),
-        { fromUi: false }
-      )
-      return
-    }
-
-    // Maybe send a widgetValue update to the widgetStateManager.
-
+  public componentDidUpdate = (): void => {
     // If our status is not "ready", then we have uploads in progress.
     // We won't submit a new widgetValue until all uploads have resolved.
     if (this.status !== "ready") {
@@ -286,10 +261,10 @@ class CameraInput extends React.PureComponent<Props, State> {
     // If we have had no completed uploads, our widgetValue will be
     // undefined, and we can early-out of the state update.
     const newWidgetValue = this.createWidgetValue()
-    if (newWidgetValue === undefined) {
-      return
-    }
 
+    const { element, widgetMgr } = this.props
+
+    // Maybe send a widgetValue update to the widgetStateManager.
     const prevWidgetValue = widgetMgr.getFileUploaderStateValue(element)
     if (!_.isEqual(newWidgetValue, prevWidgetValue)) {
       widgetMgr.setFileUploaderStateValue(element, newWidgetValue, {
@@ -298,7 +273,23 @@ class CameraInput extends React.PureComponent<Props, State> {
     }
   }
 
-  private createWidgetValue(): FileUploaderStateProto | undefined {
+  public componentDidMount(): void {
+    const newWidgetValue = this.createWidgetValue()
+    const { element, widgetMgr } = this.props
+
+    // Set the state value on mount, to avoid triggering an extra rerun after
+    // the first rerun.
+    // We use same primitives as in file uploader widget,
+    // since simanticly camera_input is just a special case of file uploader.
+    const prevWidgetValue = widgetMgr.getFileUploaderStateValue(element)
+    if (prevWidgetValue === undefined) {
+      widgetMgr.setFileUploaderStateValue(element, newWidgetValue, {
+        fromUi: false,
+      })
+    }
+  }
+
+  private createWidgetValue(): FileUploaderStateProto {
     const uploadedFileInfo: UploadedFileInfoProto[] = this.state.files
       .filter(f => f.status.type === "uploaded")
       .map(f => {

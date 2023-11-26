@@ -142,8 +142,9 @@ export const createEmotionTheme = (
     backgroundColor: bgColor,
     primaryColor: primary,
     textColor: bodyText,
-    widgetBackgroundColor: widgetBackgroundColor,
-    widgetBorderColor: widgetBorderColor,
+    skeletonBackgroundColor,
+    widgetBackgroundColor,
+    widgetBorderColor,
   } = parsedColors
 
   const newGenericColors = { ...genericColors }
@@ -155,6 +156,8 @@ export const createEmotionTheme = (
   if (widgetBackgroundColor)
     newGenericColors.widgetBackgroundColor = widgetBackgroundColor
   if (widgetBorderColor) newGenericColors.widgetBorderColor = widgetBorderColor
+  if (skeletonBackgroundColor)
+    newGenericColors.skeletonBackgroundColor = skeletonBackgroundColor
 
   const conditionalOverrides: any = {}
 
@@ -415,6 +418,27 @@ export function computeSpacingStyle(
 
 export function hasLightBackgroundColor(theme: EmotionTheme): boolean {
   return getLuminance(theme.colors.bgColor) > 0.5
+}
+
+export function getDividerColors(theme: EmotionTheme): any {
+  const lightTheme = hasLightBackgroundColor(theme)
+  const blue = lightTheme ? theme.colors.blue60 : theme.colors.blue90
+  const green = lightTheme ? theme.colors.green60 : theme.colors.green90
+  const orange = lightTheme ? theme.colors.orange60 : theme.colors.orange90
+  const red = lightTheme ? theme.colors.red60 : theme.colors.red90
+  const violet = lightTheme ? theme.colors.purple60 : theme.colors.purple80
+  const gray = lightTheme ? theme.colors.gray40 : theme.colors.gray70
+
+  return {
+    blue: blue,
+    green: green,
+    orange: orange,
+    red: red,
+    violet: violet,
+    gray: gray,
+    grey: gray,
+    rainbow: `linear-gradient(to right, ${red}, ${orange}, ${green}, ${blue}, ${violet})`,
+  }
 }
 
 export function getMarkdownTextColors(theme: EmotionTheme): any {

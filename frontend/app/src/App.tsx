@@ -92,6 +92,7 @@ import {
   PageNotFound,
   PageProfile,
   PagesChanged,
+  ParentMessage,
   SessionEvent,
   SessionStatus,
   WidgetStates,
@@ -104,6 +105,9 @@ import {
   createFormsData,
   FormsData,
   WidgetStateManager,
+  IHostConfigResponse,
+  LibConfig,
+  AppConfig,
 } from "@streamlit/lib"
 import { concat, noop, without } from "lodash"
 
@@ -165,9 +169,13 @@ interface State {
   pageLinkBaseUrl: string
   queryParams: string
   deployedAppMetadata: DeployedAppMetadata
+  libConfig: LibConfig
+  appConfig: AppConfig
 }
 
 const ELEMENT_LIST_BUFFER_TIMEOUT_MS = 10
+
+const INITIAL_SCRIPT_RUN_ID = "<null>"
 
 // eslint-disable-next-line
 declare global {
@@ -235,10 +243,10 @@ export class App extends PureComponent<Props, State> {
 
     this.state = {
       connectionState: ConnectionState.INITIAL,
-      elements: AppRoot.empty("Please wait..."),
+      elements: AppRoot.empty(true),
       isFullScreen: false,
       scriptName: "",
-      scriptRunId: "<null>",
+      scriptRunId: INITIAL_SCRIPT_RUN_ID,
       appHash: null,
       scriptRunState: ScriptRunState.NOT_RUNNING,
       userSettings: {
@@ -274,6 +282,8 @@ export class App extends PureComponent<Props, State> {
       pageLinkBaseUrl: "",
       queryParams: "",
       deployedAppMetadata: {},
+      libConfig: {},
+      appConfig: {},
     }
 
     this.connectionManager = null
@@ -378,7 +388,29 @@ export class App extends PureComponent<Props, State> {
       connectionStateChanged: this.handleConnectionStateChanged,
       claimHostAuthToken: this.hostCommunicationMgr.claimAuthToken,
       resetHostAuthToken: this.hostCommunicationMgr.resetAuthToken,
-      setAllowedOriginsResp: this.hostCommunicationMgr.setAllowedOriginsResp,
+      onHostConfigResp: (response: IHostConfigResponse) => {
+        const {
+          allowedOrigins,
+          useExternalAuthToken,
+          disableFullscreenMode,
+          enableCustomParentMessages,
+          mapboxToken,
+        } = response
+
+        const appConfig: AppConfig = {
+          allowedOrigins,
+          useExternalAuthToken,
+          enableCustomParentMessages,
+        }
+        const libConfig: LibConfig = { mapboxToken, disableFullscreenMode }
+
+        // Set the allowed origins configuration for the host communication:
+        this.hostCommunicationMgr.setAllowedOrigins(appConfig)
+        // Set the streamlit-app specific config settings in AppContext:
+        this.setAppConfig(appConfig)
+        // Set the streamlit-lib specific config settings in LibContext:
+        this.setLibConfig(libConfig)
+      },
     })
 
     if (isScrollingHidden()) {
@@ -534,6 +566,19 @@ export class App extends PureComponent<Props, State> {
     })
   }
 
+  handleCustomParentMessage = (parentMessage: ParentMessage): void => {
+    if (this.state.appConfig.enableCustomParentMessages) {
+      this.hostCommunicationMgr.sendMessageToHost({
+        type: "CUSTOM_PARENT_MESSAGE",
+        message: parentMessage.message,
+      })
+    } else {
+      logError(
+        "Sending messages to the host is disabled in line with the platform policy."
+      )
+    }
+  }
+
   /**
    * Callback when we get a message from the server.
    */
@@ -577,6 +622,8 @@ export class App extends PureComponent<Props, State> {
           this.handlePageProfileMsg(pageProfile),
         fileUrlsResponse: (fileURLsResponse: FileURLsResponse) =>
           this.uploadClient.onFileURLsResponse(fileURLsResponse),
+        parentMessage: (parentMessage: ParentMessage) =>
+          this.handleCustomParentMessage(parentMessage),
       })
     } catch (e) {
       const err = ensureError(e)
@@ -1063,7 +1110,7 @@ export class App extends PureComponent<Props, State> {
         scriptRunId,
         scriptName,
         appHash,
-        elements: AppRoot.empty(),
+        elements: AppRoot.empty(false),
       },
       () => {
         this.pendingElementsBuffer = this.state.elements
@@ -1338,7 +1385,6 @@ export class App extends PureComponent<Props, State> {
       type: DialogType.DEPLOY_DIALOG,
       onClose: this.closeDialog,
       showDeployError: this.showDeployError,
-      gitInfo: this.state.gitInfo,
       isDeployErrorModalOpen:
         this.state.dialog?.type === DialogType.DEPLOY_ERROR,
       metricsMgr: this.metricsMgr,
@@ -1468,6 +1514,20 @@ export class App extends PureComponent<Props, State> {
     this.setState({ isFullScreen })
   }
 
+  /**
+   * Set streamlit-lib specific configurations.
+   */
+  setLibConfig = (libConfig: LibConfig): void => {
+    this.setState({ libConfig })
+  }
+
+  /**
+   * Set streamlit-app specific configurations.
+   */
+  setAppConfig = (appConfig: AppConfig): void => {
+    this.setState({ appConfig })
+  }
+
   addScriptFinishedHandler = (func: () => void): void => {
     this.setState((prevState, _) => {
       return {
@@ -1551,7 +1611,6 @@ export class App extends PureComponent<Props, State> {
       scriptRunId,
       scriptRunState,
       userSettings,
-      gitInfo,
       hideTopBar,
       hideSidebarNav,
       currentPageScriptHash,
@@ -1560,6 +1619,8 @@ export class App extends PureComponent<Props, State> {
       sidebarChevronDownshift,
       hostMenuItems,
       hostToolbarItems,
+      libConfig,
+      appConfig,
     } = this.state
     const developmentMode = showDevelopmentOptions(
       this.state.isOwner,
@@ -1601,6 +1662,8 @@ export class App extends PureComponent<Props, State> {
           pageLinkBaseUrl,
           sidebarChevronDownshift,
           toastAdjustment: hostToolbarItems.length > 0,
+          gitInfo: this.state.gitInfo,
+          appConfig,
         }}
       >
         <LibContext.Provider
@@ -1613,7 +1676,7 @@ export class App extends PureComponent<Props, State> {
             setTheme: this.setAndSendTheme,
             availableThemes: this.props.theme.availableThemes,
             addThemes: this.props.theme.addThemes,
-            hideFullScreenButtons: false,
+            libConfig,
           }}
         >
           <HotKeys
@@ -1622,7 +1685,15 @@ export class App extends PureComponent<Props, State> {
             attach={window}
             focused={true}
           >
-            <StyledApp className={outerDivClass}>
+            <StyledApp
+              className={outerDivClass}
+              data-testid="stApp"
+              data-teststate={
+                scriptRunId == INITIAL_SCRIPT_RUN_ID
+                  ? "initial"
+                  : scriptRunState
+              }
+            >
               {/* The tabindex below is required for testing. */}
               <Header>
                 {!hideTopBar && (
@@ -1661,16 +1732,6 @@ export class App extends PureComponent<Props, State> {
                   developmentMode={developmentMode}
                   sendMessageToHost={
                     this.hostCommunicationMgr.sendMessageToHost
-                  }
-                  gitInfo={gitInfo}
-                  showDeployError={this.showDeployError}
-                  closeDialog={this.closeDialog}
-                  isDeployErrorModalOpen={
-                    this.state.dialog?.type === DialogType.DEPLOY_ERROR
-                  }
-                  loadGitInfo={this.sendLoadGitInfoBackMsg}
-                  canDeploy={
-                    this.sessionInfo.isSet && !this.sessionInfo.isHello
                   }
                   menuItems={menuItems}
                   metricsMgr={this.metricsMgr}

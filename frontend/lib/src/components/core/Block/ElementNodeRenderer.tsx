@@ -45,6 +45,7 @@ import {
   IFrame as IFrameProto,
   ImageList as ImageListProto,
   Json as JsonProto,
+  LinkButton as LinkButtonProto,
   Markdown as MarkdownProto,
   Metric as MetricProto,
   PlotlyChart as PlotlyChartProto,
@@ -69,10 +70,12 @@ import ExceptionElement from "@streamlit/lib/src/components/elements/ExceptionEl
 import Json from "@streamlit/lib/src/components/elements/Json"
 import Markdown from "@streamlit/lib/src/components/elements/Markdown"
 import Metric from "@streamlit/lib/src/components/elements/Metric"
-import Table from "@streamlit/lib/src/components/elements/Table"
+import {
+  Skeleton,
+  AppSkeleton,
+} from "@streamlit/lib/src/components/elements/Skeleton"
 import TextElement from "@streamlit/lib/src/components/elements/TextElement"
 import { ComponentInstance } from "@streamlit/lib/src/components/widgets/CustomComponent"
-import { Kind } from "@streamlit/lib/src/components/shared/AlertContainer"
 import { VegaLiteChartElement } from "@streamlit/lib/src/components/elements/ArrowVegaLiteChart/ArrowVegaLiteChart"
 import { getAlertElementKind } from "@streamlit/lib/src/components/elements/AlertElement/AlertElement"
 
@@ -120,9 +123,6 @@ const BokehChart = React.lazy(
 // eslint-disable-next-line testing-library/render-result-naming-convention
 const DebouncedBokehChart = debounceRender(BokehChart, 100)
 
-const DataFrame = React.lazy(
-  () => import("@streamlit/lib/src/components/elements/DataFrame")
-)
 const DeckGlJsonChart = React.lazy(
   () => import("@streamlit/lib/src/components/elements/DeckGlJsonChart")
 )
@@ -135,11 +135,13 @@ const IFrame = React.lazy(
 const ImageList = React.lazy(
   () => import("@streamlit/lib/src/components/elements/ImageList")
 )
+
+const LinkButton = React.lazy(
+  () => import("@streamlit/lib/src/components/elements/LinkButton")
+)
+
 const PlotlyChart = React.lazy(
   () => import("@streamlit/lib/src/components/elements/PlotlyChart")
-)
-const VegaLiteChart = React.lazy(
-  () => import("@streamlit/lib/src/components/elements/VegaLiteChart")
 )
 const Video = React.lazy(
   () => import("@streamlit/lib/src/components/elements/Video")
@@ -239,23 +241,7 @@ const RawElementNodeRenderer = (
 
   // TODO: Move this into type signature of props. The width is actually guaranteed to be nonzero
   // since leaf elements are always direct children of a VerticalBlock, which always calculates
-  let width = props.width ?? 0
-
-  // Modify width using the value from the spec as passed with the message when applicable
-  if (node.metadata.elementDimensionSpec) {
-    if (
-      node.metadata.elementDimensionSpec.width &&
-      node.metadata.elementDimensionSpec.width > 0
-    ) {
-      width = Math.min(node.metadata.elementDimensionSpec.width, width)
-    }
-    if (
-      node.metadata.elementDimensionSpec.height &&
-      node.metadata.elementDimensionSpec.height > 0
-    ) {
-      height = node.metadata.elementDimensionSpec.height
-    }
-  }
+  const width = props.width ?? 0
 
   switch (node.element.type) {
     case "alert": {
@@ -306,19 +292,9 @@ const RawElementNodeRenderer = (
         />
       )
 
-    case "dataFrame":
-      return (
-        <DataFrame
-          element={node.immutableElement.get("dataFrame")}
-          width={width}
-          height={height}
-        />
-      )
-
     case "deckGlJsonChart":
       return (
         <DeckGlJsonChart
-          sessionInfo={props.sessionInfo}
           width={width}
           element={node.element.deckGlJsonChart as DeckGlJsonChartProto}
         />
@@ -409,11 +385,6 @@ const RawElementNodeRenderer = (
         />
       )
 
-    case "table":
-      return (
-        <Table element={node.immutableElement.get("table")} width={width} />
-      )
-
     case "text":
       return (
         <TextElement width={width} element={node.element.text as TextProto} />
@@ -421,14 +392,6 @@ const RawElementNodeRenderer = (
 
     case "metric":
       return <Metric element={node.element.metric as MetricProto} />
-
-    case "vegaLiteChart":
-      return (
-        <VegaLiteChart
-          element={node.immutableElement.get("vegaLiteChart")}
-          width={width}
-        />
-      )
 
     case "video":
       return (
@@ -494,6 +457,13 @@ const RawElementNodeRenderer = (
           width={width}
           {...widgetProps}
         />
+      )
+    }
+    case "linkButton": {
+      const linkButtonProto = node.element.linkButton as LinkButtonProto
+      widgetProps.disabled = widgetProps.disabled || linkButtonProto.disabled
+      return (
+        <LinkButton element={linkButtonProto} width={width} {...widgetProps} />
       )
     }
     case "cameraInput": {
@@ -639,6 +609,10 @@ const RawElementNodeRenderer = (
       )
     }
 
+    case "skeleton": {
+      return <AppSkeleton />
+    }
+
     case "slider": {
       const sliderProto = node.element.slider as SliderProto
       widgetProps.disabled = widgetProps.disabled || sliderProto.disabled
@@ -767,11 +741,7 @@ const ElementNodeRenderer = (
         elementType={elementType}
       >
         <ErrorBoundary width={width}>
-          <Suspense
-            fallback={
-              <AlertElement body="Loading..." kind={Kind.INFO} width={width} />
-            }
-          >
+          <Suspense fallback={<Skeleton />}>
             <RawElementNodeRenderer {...props} isStale={isStale} />
           </Suspense>
         </ErrorBoundary>
