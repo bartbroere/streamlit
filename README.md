@@ -1,4 +1,11 @@
-<br>
+> The repository you're looking at is a personal fork of [the `streamlit` project](https://pypi.org/project/streamlit)
+> It has some features that are not (yet) merged into the official `streamlit` project:
+> + Markdown support for `st.dataframe` (rendered only when double clicked!)
+> + Configurable list of allowed file extensions for the static server, and a configurable maximum static file size
+> The list above may grow and shrink depending on the status of my pull requests.
+> I recommend using the upstream and official streamlit package.
+> The official project will receive more frequent updates and is more likely to keep being maintained in the long run.
+> If you want to try out any of the features listed above, of course feel free to use this one.
 
 <img src="https://user-images.githubusercontent.com/7164864/217935870-c0bc60a3-6fc0-4047-b011-7b4c59488c91.png" alt="Streamlit logo" style="margin-top:50px"></img>
 
